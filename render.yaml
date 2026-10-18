@@ -1,0 +1,15 @@
+# Render Blueprint: sèvè tan reyèl Lakou a (Express + Socket.IO)
+services:
+  - type: web
+    name: lakou-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Adrès sit Netlify ou (pa egzanp https://lakou.netlify.app). Plizyè: separe ak vigil.
+      - key: CLIENT_ORIGIN
+        sync: false

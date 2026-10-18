@@ -1,0 +1,13 @@
+# Netlify: sèlman paj yo (dosye public/). Sèvè Socket.IO a sou Render.
+[build]
+  publish = "public"
+  command = "node scripts/netlify-config.js"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# config.js pa dwe rete nan cache, konsa chanjman adrès sèvè a parèt touswit
+[[headers]]
+  for = "/config.js"
+  [headers.values]
+    Cache-Control = "no-cache"

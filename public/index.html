@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ht">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lakou</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ===== AKÈY: mete non w ===== -->
+  <main id="welcome" class="lobby">
+    <div class="marquee">
+      <p class="eyebrow">Jwe · Ri · Gade fim · Konekte</p>
+      <h1>Lakou<span>.</span></h1>
+      <p class="lede">Lakou kote zanmi yo rankontre anliy: lanse yon jwèt, poste yon blag ki pou fè tout moun ri, òganize yon movie night, oswa jis vin pale ak moun.</p>
+    </div>
+
+    <form id="welcome-form" class="card" autocomplete="off">
+      <label for="name">Ki jan yo rele w?</label>
+      <input id="name" maxlength="24" placeholder="Egzanp: Ti Jak" required />
+      <button type="submit" class="btn primary">Antre nan lakou a →</button>
+      <p class="fine">Pa bezwen kont. Non w ap parèt pou lòt moun yo.</p>
+      <p id="welcome-status" class="fine" role="status"></p>
+      <p id="welcome-error" class="error" role="alert"></p>
+    </form>
+  </main>
+
+  <!-- ===== APP: onglè prensipal yo ===== -->
+  <div id="app" hidden>
+    <header class="appbar">
+      <div class="brand">Lakou<span>.</span></div>
+      <nav class="mainnav" role="tablist" aria-label="Seksyon">
+        <button class="navtab active" data-view="home" role="tab">🏠 <span>Lakou</span></button>
+        <button class="navtab" data-view="movie" role="tab">🎬 <span class="long">Movie Night</span><span class="short">Fim</span></button>
+        <button class="navtab" data-view="games" role="tab">🎲 <span>Jwèt</span></button>
+        <button class="navtab" data-view="rire" role="tab">😂 <span>Rire</span></button>
+        <button class="navtab" data-view="konekte" role="tab">💬 <span>Konekte</span> <b id="online-badge" class="badge">0</b></button>
+        <button class="navtab room-tab" data-view="room" role="tab" id="nav-room" hidden>📍 <span class="long" id="nav-room-label">Sal</span><span class="short">Sal ou</span></button>
+      </nav>
+      <button id="me-chip" class="me-chip" title="Chanje non">👤 <span id="me-name"></span></button>
+    </header>
+
+    <!-- 🏠 Akèy -->
+    <section id="view-home" class="view">
+      <div class="hello">
+        <h2 class="view-title">Bonjou, <span id="hello-name"></span> 👋</h2>
+        <p class="view-sub">Kisa w anvi fè jodi a?</p>
+      </div>
+      <div class="hub">
+        <button class="hub-card c-movie" data-go="movie">
+          <span class="hub-emoji">🎬</span>
+          <strong>Movie Night</strong>
+          <span>Gade menm fim nan ansanm, an menm tan, ak chat ak reyaksyon.</span>
+          <em id="stat-movie">0 sal ouvè</em>
+        </button>
+        <button class="hub-card c-games" data-go="games">
+          <span class="hub-emoji">🎲</span>
+          <strong>Jwèt</strong>
+          <span>Trivia sou kilti ayisyen ak plis ankò. Kiyès ki pi entèlijan nan gwoup la?</span>
+          <em id="stat-games">0 jwèt ouvè</em>
+        </button>
+        <button class="hub-card c-rire" data-go="rire">
+          <span class="hub-emoji">😂</span>
+          <strong>Rire</strong>
+          <span>Poste blag ou, ri ak blag lòt moun, epi wè kilès ki pi komik.</span>
+          <em id="stat-rire">0 blag</em>
+        </button>
+        <button class="hub-card c-konekte" data-go="konekte">
+          <span class="hub-emoji">💬</span>
+          <strong>Konekte</strong>
+          <span>Pale ak tout moun ki nan lakou a kounye a, epi fè nouvo zanmi.</span>
+          <em id="stat-online">0 moun an liy</em>
+        </button>
+      </div>
+    </section>
+
+    <!-- 🎬 Movie Night -->
+    <section id="view-movie" class="view" hidden>
+      <h2 class="view-title">🎬 Movie Night</h2>
+      <p class="view-sub">Kreye yon sal sinema, voye kòd la bay zanmi w, epi gade fim nan ansanm.</p>
+      <div class="launch">
+        <div class="launch-card">
+          <strong>Kreye yon sal fim</strong>
+          <label class="check"><input type="checkbox" id="movie-public" checked /> Piblik (tout moun ka wè l epi antre)</label>
+          <button class="btn primary" data-create="movie">🎬 Kreye sal la</button>
+        </div>
+        <form class="launch-card join-form" data-kind="movie" autocomplete="off">
+          <strong>Antre ak yon kòd</strong>
+          <div class="join-row">
+            <input maxlength="6" placeholder="KÒD SAL" aria-label="Kòd sal la" class="code-input" />
+            <button class="btn" type="submit">Antre</button>
+          </div>
+        </form>
+      </div>
+      <h3 class="list-title">Sal ouvè kounye a</h3>
+      <div id="movie-rooms" class="room-grid"></div>
+    </section>
+
+    <!-- 🎲 Jwèt -->
+    <section id="view-games" class="view" hidden>
+      <h2 class="view-title">🎲 Jwèt</h2>
+      <p class="view-sub">Kreye yon sal jwèt, envite zanmi w, epi jwe an dirèk.</p>
+      <div class="game-cards">
+        <div class="game-card live">
+          <span class="hub-emoji">🧠</span>
+          <strong>Trivia Lakou</strong>
+          <span>Kesyon sou istwa ak kilti ayisyen, konesans jeneral ak sinema. Plis ou reponn vit, plis ou fè pwen.</span>
+          <label class="check"><input type="checkbox" id="game-public" checked /> Piblik</label>
+          <button class="btn primary" data-create="game">Jwe kounye a</button>
+        </div>
+        <div class="game-card soon">
+          <span class="hub-emoji">🗣️</span>
+          <strong>Krik? Krak!</strong>
+          <span>Devinèt: ekri repons ou anvan lòt yo.</span>
+          <em>Byento</em>
+        </div>
+        <div class="game-card soon">
+          <span class="hub-emoji">🎨</span>
+          <strong>Desen &amp; Devine</strong>
+          <span>Yon moun desinen, lòt yo devine.</span>
+          <em>Byento</em>
+        </div>
+      </div>
+      <form class="launch-card join-form inline" data-kind="game" autocomplete="off">
+        <strong>Gen yon kòd?</strong>
+        <div class="join-row">
+          <input maxlength="6" placeholder="KÒD SAL" aria-label="Kòd sal la" class="code-input" />
+          <button class="btn" type="submit">Antre</button>
+        </div>
+      </form>
+      <h3 class="list-title">Jwèt ouvè kounye a</h3>
+      <div id="game-rooms" class="room-grid"></div>
+    </section>
+
+    <!-- 😂 Rire -->
+    <section id="view-rire" class="view" hidden>
+      <h2 class="view-title">😂 Rire</h2>
+      <p class="view-sub">Poste yon blag. Si li fè w ri, klike 😂. Blag ki resevwa 3 rapò ap kache.</p>
+      <form id="joke-form" class="joke-form" autocomplete="off">
+        <textarea id="joke-input" maxlength="400" rows="3" placeholder="Ou konn yon bon blag? Ekri l la…"></textarea>
+        <div class="joke-form-row">
+          <span id="joke-count" class="fine">0/400</span>
+          <button class="btn primary" type="submit">Poste blag la</button>
+        </div>
+      </form>
+      <div class="sort" role="group" aria-label="Lòd">
+        <button class="pill active" data-sort="new">🆕 Nouvo</button>
+        <button class="pill" data-sort="top">🏆 Pi komik</button>
+      </div>
+      <div id="joke-list" class="joke-list"></div>
+    </section>
+
+    <!-- 💬 Konekte -->
+    <section id="view-konekte" class="view" hidden>
+      <h2 class="view-title">💬 Konekte</h2>
+      <p class="view-sub">Chat ak tout moun ki nan lakou a kounye a. Rete respè, epi pa pataje enfòmasyon pèsonèl.</p>
+      <div class="konekte">
+        <div class="chat lobby-chat">
+          <h2>Chat jeneral</h2>
+          <ol id="lobby-messages" class="messages" aria-live="polite"></ol>
+          <form id="lobby-form" class="chat-form" autocomplete="off">
+            <input id="lobby-input" maxlength="300" placeholder="Di bonjou bay lakou a…" />
+            <button class="btn primary small" type="submit">Voye</button>
+          </form>
+        </div>
+        <div class="members">
+          <h2>An liy <span id="online-count" class="count">0</span></h2>
+          <ul id="online-list" class="online-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 📍 Sal (fim + jwèt) -->
+    <section id="view-room" class="view room" hidden>
+    <header class="topbar">
+      <div class="room-title" id="room-title">Sal</div>
+      <button id="copy-link" class="code-pill" title="Kopye lyen envitasyon an">
+        Sal <strong id="room-code">——</strong> <span class="copy-hint" id="copy-hint">Kopye lyen</span>
+      </button>
+      <button id="leave-btn" class="btn ghost small">Kite sal la</button>
+    </header>
+
+    <section class="stage">
+      <div class="screen-wrap">
+        <nav class="tabs" role="tablist">
+          <button id="tab-movie" class="tab active" role="tab" aria-selected="true">🎬 Fim</button>
+          <button id="tab-game" class="tab" role="tab" aria-selected="false">🎲 Jwèt <span id="game-live" class="live-dot" hidden></span></button>
+        </nav>
+
+        <div class="view-area">
+          <div id="movie-view">
+            <div class="screen">
+              <div id="player"></div>
+              <div id="empty-screen" class="empty-screen">
+                <p class="big">🍿</p>
+                <p id="empty-text">Host la poko chwazi yon fim.</p>
+              </div>
+              <button id="unmute-overlay" class="overlay" hidden>▶ Klike pou w rantre nan fim nan</button>
+            </div>
+
+            <form id="video-form" class="video-form">
+              <input id="video-url" placeholder="Kole yon lyen YouTube (oswa fim domèn piblik sou YouTube)…" />
+              <button class="btn primary" type="submit">Mete fim nan</button>
+            </form>
+            <p id="host-note" class="note"></p>
+          </div>
+
+          <div id="game-view" class="game-view" hidden></div>
+          <div id="reactions-layer" class="reactions-layer" aria-hidden="true"></div>
+        </div>
+
+        <div class="react-bar" id="react-bar">
+          <button data-emoji="😂">😂</button>
+          <button data-emoji="🔥">🔥</button>
+          <button data-emoji="😱">😱</button>
+          <button data-emoji="❤️">❤️</button>
+          <button data-emoji="👏">👏</button>
+          <button data-emoji="😭">😭</button>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="members">
+          <h2>Nan sal la <span id="member-count" class="count">0</span></h2>
+          <ul id="member-list"></ul>
+        </div>
+        <div class="chat">
+          <h2>Chat</h2>
+          <ol id="messages" class="messages" aria-live="polite"></ol>
+          <form id="chat-form" class="chat-form" autocomplete="off">
+            <input id="chat-input" maxlength="300" placeholder="Di yon bagay…" />
+            <button class="btn primary small" type="submit">Voye</button>
+          </form>
+        </div>
+      </aside>
+    </section>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket.io.min.js"></script>
+  <script src="https://www.youtube.com/iframe_api" async></script>
+  <script src="app.js"></script>
+</body>
+</html>
