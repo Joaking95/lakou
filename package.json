@@ -1,6 +1,6 @@
 {
   "name": "lakou",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Lakou: jwe, ri, gade fim ansanm, epi konekte ak moun an dirèk.",
   "main": "server.js",
   "private": true,

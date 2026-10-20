@@ -17,11 +17,26 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
   const newId = () => `${now().toString(36)}${(++seq).toString(36)}${Math.floor(random() * 1e4).toString(36)}`;
 
   // ---------- Prezans ----------
-  function hello(socketId, name) {
+  // extra: { token, avatar } (token pa janm soti nan modil sa a)
+  function hello(socketId, name, extra = {}) {
     const n = cleanName(name);
     const existing = users.get(socketId);
-    users.set(socketId, { name: n, since: existing ? existing.since : now() });
+    users.set(socketId, {
+      name: n,
+      since: existing ? existing.since : now(),
+      token: extra.token || (existing && existing.token) || null,
+      avatar: extra.avatar || (existing && existing.avatar) || null,
+    });
     return n;
+  }
+  function tokenOf(socketId) {
+    const u = users.get(socketId);
+    return u ? u.token : null;
+  }
+  function socketOfToken(token) {
+    if (!token) return null;
+    for (const [id, u] of users) if (u.token === token) return id;
+    return null;
   }
   function bye(socketId) {
     return users.delete(socketId);
@@ -32,7 +47,7 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
   }
   function online() {
     return [...users.entries()]
-      .map(([id, u]) => ({ id, name: u.name }))
+      .map(([id, u]) => ({ id, name: u.name, avatar: u.avatar }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -42,7 +57,7 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
     if (!from) return { error: "Antre non w anvan." };
     const body = String(text || "").trim().slice(0, MAX_CHAT);
     if (!body) return { error: "Mesaj la vid." };
-    const msg = { id: newId(), fromId: socketId, from, text: body, at: now() };
+    const msg = { id: newId(), fromId: socketId, from, avatar: (users.get(socketId) || {}).avatar || null, text: body, at: now() };
     lobby.push(msg);
     if (lobby.length > LOBBY_HISTORY) lobby.shift();
     return { msg };
@@ -56,6 +71,7 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
     return {
       id: j.id,
       by: j.by,
+      avatar: j.avatar,
       byId: j.byId, // pou kliyan an konnen si se blag pa l (bouton "Efase")
       text: j.text,
       at: j.at,
@@ -72,7 +88,10 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
     if (body.length < 3) return { error: "Blag la twò kout." };
     const recentSame = jokes.find((j) => j.byId === socketId && j.text === body && !j.hidden);
     if (recentSame) return { error: "Ou deja poste blag sa a." };
-    const joke = { id: newId(), by, byId: socketId, text: body, at: now(), laughs: new Set(), reports: new Set(), hidden: false };
+    const joke = {
+      id: newId(), by, byId: socketId, byToken: tokenOf(socketId), avatar: (users.get(socketId) || {}).avatar || null,
+      text: body, at: now(), laughs: new Set(), everLaughed: new Set(), reports: new Set(), hidden: false,
+    };
     jokes.unshift(joke);
     if (jokes.length > MAX_JOKES) jokes.pop();
     return { joke };
@@ -88,9 +107,15 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
     if (!nameOf(socketId)) return { error: "Antre non w anvan." };
     const j = find(jokeId);
     if (!j) return { error: "Blag sa a pa egziste ankò." };
+    let firstLaugh = false;
     if (j.laughs.has(socketId)) j.laughs.delete(socketId);
-    else j.laughs.add(socketId);
-    return { joke: j, laughed: j.laughs.has(socketId) };
+    else {
+      j.laughs.add(socketId);
+      // XP pou otè a sèlman premye fwa yon moun ri (pa pou pwòp blag ou)
+      const t = tokenOf(socketId) || socketId;
+      if (!j.everLaughed.has(t) && t !== j.byToken) { j.everLaughed.add(t); firstLaugh = true; }
+    }
+    return { joke: j, laughed: j.laughs.has(socketId), firstLaugh };
   }
 
   // Apre REPORTS_TO_HIDE rapò diferan, blag la kache pou tout moun.
@@ -120,7 +145,7 @@ function createSocial({ now = () => Date.now(), random = Math.random } = {}) {
   }
 
   return {
-    hello, bye, nameOf, online,
+    hello, bye, nameOf, online, tokenOf, socketOfToken,
     lobbyMessage, lobbyHistory,
     postJoke, toggleLaugh, report, deleteJoke, listJokes, publicJoke,
   };

@@ -20,8 +20,10 @@
     <form id="welcome-form" class="card" autocomplete="off">
       <label for="name">Ki jan yo rele w?</label>
       <input id="name" maxlength="24" placeholder="Egzanp: Ti Jak" required />
+      <span class="field-label">Chwazi avatar ou</span>
+      <div class="avatar-pick" id="avatar-pick" role="radiogroup" aria-label="Avatar"></div>
       <button type="submit" class="btn primary">Antre nan lakou a →</button>
-      <p class="fine">Pa bezwen kont. Non w ap parèt pou lòt moun yo.</p>
+      <p class="fine">Pa bezwen kont. Pwogrè w (XP, nivo, viktwa) sere sou aparèy sa a.</p>
       <p id="welcome-status" class="fine" role="status"></p>
       <p id="welcome-error" class="error" role="alert"></p>
     </form>
@@ -36,18 +38,35 @@
         <button class="navtab" data-view="movie" role="tab">🎬 <span class="long">Movie Night</span><span class="short">Fim</span></button>
         <button class="navtab" data-view="games" role="tab">🎲 <span>Jwèt</span></button>
         <button class="navtab" data-view="rire" role="tab">😂 <span>Rire</span></button>
-        <button class="navtab" data-view="konekte" role="tab">💬 <span>Konekte</span> <b id="online-badge" class="badge">0</b></button>
+        <button class="navtab" data-view="konekte" role="tab">💬 <span>Konekte</span> <b id="online-badge" class="badge">0</b><b id="unread-badge" class="badge hot" hidden>0</b></button>
+        <button class="navtab table-tab" data-view="table" role="tab" id="nav-table" hidden>🎮 <span>Pati</span> <b id="turn-badge" class="badge hot" hidden>!</b></button>
         <button class="navtab room-tab" data-view="room" role="tab" id="nav-room" hidden>📍 <span class="long" id="nav-room-label">Sal</span><span class="short">Sal ou</span></button>
       </nav>
-      <button id="me-chip" class="me-chip" title="Chanje non">👤 <span id="me-name"></span></button>
+      <button id="sound-btn" class="icon-btn" title="Son" aria-label="Aktive oswa koupe son">🔊</button>
+      <button id="me-chip" class="me-chip" title="Pwofil ou"><span id="me-avatar">😎</span> <span id="me-name"></span> <b id="me-level" class="lvl-chip">N1</b></button>
     </header>
 
     <!-- 🏠 Akèy -->
     <section id="view-home" class="view">
-      <div class="hello">
-        <h2 class="view-title">Bonjou, <span id="hello-name"></span> 👋</h2>
-        <p class="view-sub">Kisa w anvi fè jodi a?</p>
+      <div class="profile-hero">
+        <div class="ph-avatar" id="ph-avatar">😎</div>
+        <div class="ph-main">
+          <h2 class="view-title">Bonjou, <span id="hello-name"></span> 👋</h2>
+          <div class="ph-meta">
+            <span class="lvl" id="ph-level">Nivo 1</span>
+            <span id="ph-title">Ti moun lakou</span>
+            <span class="streak" id="ph-streak" title="Jou youn dèyè lòt">🔥 1 jou</span>
+            <span class="record" id="ph-record">0 viktwa</span>
+          </div>
+          <div class="xpbar" aria-hidden="true"><div id="ph-xpfill"></div></div>
+          <p class="fine" id="ph-xptext">0 / 100 XP pou pwochen nivo a</p>
+        </div>
       </div>
+
+      <h3 class="list-title">⚡ Jwe touswit</h3>
+      <div class="quick-row" id="quick-row"></div>
+
+      <h3 class="list-title">Tout lakou a</h3>
       <div class="hub">
         <button class="hub-card c-movie" data-go="movie">
           <span class="hub-emoji">🎬</span>
@@ -58,7 +77,7 @@
         <button class="hub-card c-games" data-go="games">
           <span class="hub-emoji">🎲</span>
           <strong>Jwèt</strong>
-          <span>Trivia sou kilti ayisyen ak plis ankò. Kiyès ki pi entèlijan nan gwoup la?</span>
+          <span>Mòpyon, Kay, Kat Aliyen, Trivia… kont òdinatè a oswa kont zanmi w.</span>
           <em id="stat-games">0 jwèt ouvè</em>
         </button>
         <button class="hub-card c-rire" data-go="rire">
@@ -73,6 +92,18 @@
           <span>Pale ak tout moun ki nan lakou a kounye a, epi fè nouvo zanmi.</span>
           <em id="stat-online">0 moun an liy</em>
         </button>
+      </div>
+
+      <div class="home-cols">
+        <div class="panel">
+          <h2>🏆 Klasman</h2>
+          <ol id="leaderboard" class="leaderboard"></ol>
+        </div>
+        <div class="panel">
+          <h2>👥 An liy kounye a</h2>
+          <div id="online-strip" class="online-strip"></div>
+          <p class="fine">Klike sou yon moun pou defi l nan yon jwèt.</p>
+        </div>
       </div>
     </section>
 
@@ -101,14 +132,20 @@
     <!-- 🎲 Jwèt -->
     <section id="view-games" class="view" hidden>
       <h2 class="view-title">🎲 Jwèt</h2>
-      <p class="view-sub">Kreye yon sal jwèt, envite zanmi w, epi jwe an dirèk.</p>
+      <p class="view-sub">Jwe kont <b>Robo Lakou</b> 🤖, jwenn yon advèsè an liy, oswa envite yon zanmi ak yon lyen. Chak pati ba w XP!</p>
+      <div class="arcade" id="arcade"></div>
+
+      <h3 class="list-title">⏳ Moun k ap tann yon advèsè</h3>
+      <div id="open-tables" class="room-grid"></div>
+
+      <h3 class="list-title">👨‍👩‍👧‍👦 Jwèt an gwoup</h3>
       <div class="game-cards">
         <div class="game-card live">
           <span class="hub-emoji">🧠</span>
           <strong>Trivia Lakou</strong>
-          <span>Kesyon sou istwa ak kilti ayisyen, konesans jeneral ak sinema. Plis ou reponn vit, plis ou fè pwen.</span>
+          <span>Kesyon sou istwa ak kilti ayisyen, konesans jeneral ak sinema. 2 a 20 moun. Plis ou reponn vit, plis ou fè pwen.</span>
           <label class="check"><input type="checkbox" id="game-public" checked /> Piblik</label>
-          <button class="btn primary" data-create="game">Jwe kounye a</button>
+          <button class="btn primary" data-create="game">Kreye yon sal Trivia</button>
         </div>
         <div class="game-card soon">
           <span class="hub-emoji">🗣️</span>
@@ -124,14 +161,32 @@
         </div>
       </div>
       <form class="launch-card join-form inline" data-kind="game" autocomplete="off">
-        <strong>Gen yon kòd?</strong>
+        <strong>Gen yon kòd sal?</strong>
         <div class="join-row">
           <input maxlength="6" placeholder="KÒD SAL" aria-label="Kòd sal la" class="code-input" />
           <button class="btn" type="submit">Antre</button>
         </div>
       </form>
-      <h3 class="list-title">Jwèt ouvè kounye a</h3>
+      <h3 class="list-title">Sal Trivia ouvè</h3>
       <div id="game-rooms" class="room-grid"></div>
+    </section>
+
+    <!-- 🎮 Pati 1v1 (ak yon moun oswa ak robo a) -->
+    <section id="view-table" class="view table-view" hidden>
+      <div class="table-head">
+        <button class="btn ghost small" id="table-back">← Jwèt</button>
+        <h2 class="table-title" id="table-title">Pati</h2>
+        <button class="btn ghost small" id="table-rules-btn">❓ Règ yo</button>
+      </div>
+      <div class="players-bar" id="players-bar"></div>
+      <p class="table-status" id="table-status" role="status" aria-live="polite"></p>
+      <div class="board-wrap"><div id="board" class="board"></div><div id="emote-layer" class="emote-layer" aria-hidden="true"></div></div>
+      <div class="invite-box" id="invite-box" hidden>
+        <p>Voye lyen sa a bay yon zanmi pou l vin jwe avè w:</p>
+        <div class="join-row"><input id="invite-link" readonly /><button class="btn primary" id="invite-copy">Kopye</button></div>
+      </div>
+      <div class="table-actions" id="table-actions"></div>
+      <div class="emote-bar" id="emote-bar" aria-label="Reyaksyon"></div>
     </section>
 
     <!-- 😂 Rire -->
@@ -240,9 +295,40 @@
   </div>
   <div id="toast" class="toast" role="status"></div>
 
+  <!-- Defi k ap rantre -->
+  <dialog id="dlg-challenge" class="dlg">
+    <div class="dlg-avatar" id="ch-avatar">😎</div>
+    <h3 id="ch-title">Yon moun defi w!</h3>
+    <p class="fine" id="ch-timer">60 s pou w reponn</p>
+    <div class="dlg-actions">
+      <button class="btn" id="ch-decline">Refize</button>
+      <button class="btn primary" id="ch-accept">⚔️ Aksepte</button>
+    </div>
+  </dialog>
+
+  <!-- Chwazi jwèt pou defi -->
+  <dialog id="dlg-pick" class="dlg">
+    <h3 id="pick-title">Defi</h3>
+    <div class="pick-list" id="pick-list"></div>
+    <div class="dlg-actions"><button class="btn ghost" id="pick-cancel">Anile</button></div>
+  </dialog>
+
+  <!-- Règ yon jwèt -->
+  <dialog id="dlg-rules" class="dlg wide">
+    <h3 id="rules-title">Règ yo</h3>
+    <div id="rules-body" class="rules-body"></div>
+    <div class="dlg-actions"><button class="btn primary" id="rules-close">Mwen konprann</button></div>
+  </dialog>
+
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api" async></script>
+  <script src="fx.js"></script>
+  <script src="shared/morpion.js"></script>
+  <script src="shared/connect4.js"></script>
+  <script src="shared/kay.js"></script>
+  <script src="shared/bots.js"></script>
+  <script src="boards.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

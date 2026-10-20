@@ -6,12 +6,23 @@ Yon lakou anliy kote moun vin **jwe, ri, gade fim ansanm, epi konekte**. Pa bezw
 |---|---|
 | 🏠 **Lakou** | Paj akèy: kat pou chak seksyon, ak kantite moun an liy, sal ouvè, ak blag. |
 | 🎬 **Movie Night** | Kreye yon sal sinema (piblik oswa prive). Videyo YouTube senkronize pou tout moun, ak chat ak reyaksyon. |
-| 🎲 **Jwèt** | Trivia Lakou: kesyon sou kilti ayisyen, konesans jeneral ak sinema, ak revèy, pwen, klasman ak podyòm. *Krik? Krak!* ak *Desen & Devine* ap vini. |
+| 🎲 **Jwèt** | **Mòpyon** (3×3 ak 5 aliyen), **Kay / Toukay**, **Kat Aliyen**: kont Robo Lakou 🤖 (Fasil/Fò), kont yon advèsè an liy, oswa ak yon lyen envitasyon. **Trivia** an gwoup tou. |
 | 😂 **Rire** | Mi blag: poste yon blag, klike 😂 sou sa ki fè w ri, epi triye pa *Nouvo* oswa *Pi komik*. |
 | 💬 **Konekte** | Chat jeneral pou tout moun ki nan lakou a, ak lis moun ki an liy. |
 | 📍 **Sal ou** | Parèt lè w nan yon sal. Ou ka ale nan lòt onglè san w pa kite sal la. |
 
 Sou telefòn, onglè yo parèt nan yon ba anba ekran an.
+
+## Sa ki fè moun rete (v0.4)
+
+- **Avatar** ak **pwofil**: chak moun chwazi yon avatar; non, nivo ak viktwa parèt toupatou.
+- **XP ak nivo**: viktwa (+30), match nil (+15), pati jwe (+5), bat robo a (+8/+20), poste blag (+5), yon moun ri ak blag ou (+2), Trivia. Nivo yo: *Ti moun lakou → Vwazen → Zanmi lakou → Jwè serye → Chèf lakou → Lejann*.
+- **Bonis chak jou** ak **seri jou** 🔥: plis jou youn dèyè lòt, plis bonis.
+- **🏆 Klasman** sou paj akèy la.
+- **⚔️ Defi**: klike sou yon moun an liy pou envite l nan yon jwèt. Li resevwa yon fenèt «Aksepte / Refize».
+- **Son** (ka koupe ak 🔊), **konfeti** lè w genyen, animasyon grenn nan Kay, reyaksyon emoji pandan pati a.
+- **Notifikasyon**: tit onglè a klignote «Se tou pa w!», ak badj sou onglè yo (mesaj ki poko li, tou pa w).
+- **Rekoneksyon**: si koneksyon an koupe pandan yon pati, ou gen 45 segonn pou w retounen anvan ou pèdi pa fòfè.
 
 ## Kòmanse
 
@@ -46,6 +57,11 @@ rooms.js           Sal yo: kreye/antre/kite, host, senkronizasyon fim, chat sal,
 games.js           Lojik jwèt Trivia a (faz, pwen, klasman)
 questions.js       Bank kesyon yo: ajoute pwòp kesyon pa w isit la
 social.js          Moun an liy, chat jeneral, mi blag (😂, rapò, efase)
+tables.js          Tab jwèt 1v1: jwenn advèsè, defi, revanj, fòfè
+players.js         Pwofil: avatar, XP, nivo, seri jou, klasman
+public/shared/     Règ jwèt yo (morpion, kay, connect4) ak robo a: menm kòd sou sèvè a ak nan navigatè a
+public/boards.js   Entèfas jwèt 1v1 yo (tablo, animasyon, defi)
+public/fx.js       Son (Web Audio), konfeti, «+XP»
 test/              Tès inite (node:test)
 ```
 
@@ -91,7 +107,8 @@ Pou teste pi vit: `TRIVIA_QUESTION_MS=8000 TRIVIA_REVEAL_MS=3000 npm start`.
 ## Limit pwototip sa a
 
 - Tout bagay rete nan memwa: si sèvè a rekòmanse, sal yo, chat la ak blag yo efase. Pou pwodiksyon, mete yo nan yon baz done (PostgreSQL/Supabase) ak Redis.
-- Pa gen kont: yon moun ka pran nenpòt non. Si koneksyon an koupe, li pa rekonèt blag li ankò (bouton *Efase* a disparèt).
+- Pa gen kont: yon moun ka pran nenpòt non. Pwogrè a (XP, nivo) mare ak aparèy la. Si moun nan chanje telefòn oswa li efase done navigatè a, li rekòmanse a zewo.
+- Lè sèvè Render la dòmi, XP yo pa pèdi pou moun ki retounen (aparèy la renvoye dènye pwogrè li), men klasman an rekòmanse ak moun ki retounen yo. Yon moun ki konn kòd ka manipile pwogrè sere sou pwòp aparèy li: baz done a ap regle sa.
 - Modération an senp: rapò sou blag yo, ak limit vitès sou chak koneksyon. Chat yo poko gen filtre mo ni bouton bloke.
 - Gen kèk videyo YouTube ki pa pèmèt embed.
 

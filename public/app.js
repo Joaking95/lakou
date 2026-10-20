@@ -56,6 +56,33 @@
   $("name").value = store.get("lakou:name") || "";
   let joined = false; // eske nou deja di "hello" bay sèvè a
 
+  // Idantifyan sekrè aparèy sa a (pou XP ak pati yo swiv ou, menm si koneksyon an koupe)
+  function deviceToken() {
+    let t = store.get("lakou:token");
+    if (!t || !/^[A-Za-z0-9_-]{16,64}$/.test(t)) {
+      t = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, "");
+      store.set("lakou:token", t);
+    }
+    return t;
+  }
+  const TOKEN = deviceToken();
+
+  // ---------- Avatar ----------
+  const AVATARS = ["😎", "🦁", "🐯", "🐸", "🦊", "🐼", "🐵", "🦄", "🐙", "🐢", "🦜", "🌺", "🌴", "🥭", "⚽", "🎸"];
+  let myAvatar = AVATARS.includes(store.get("lakou:avatar")) ? store.get("lakou:avatar") : AVATARS[Math.floor(Math.random() * AVATARS.length)];
+  function renderAvatarPick() {
+    $("avatar-pick").replaceChildren(...AVATARS.map((a) => el("button", {
+      type: "button", class: a === myAvatar ? "on" : "", role: "radio", "aria-checked": String(a === myAvatar), "aria-label": `Avatar ${a}`,
+      onclick: () => { myAvatar = a; store.set("lakou:avatar", a); renderAvatarPick(); window.LakouFx.sound("click"); },
+    }, a)));
+  }
+  renderAvatarPick();
+
+  function localDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   $("welcome-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const n = $("name").value.trim();
@@ -77,7 +104,12 @@
     if (!ok) return;
     $("welcome").hidden = true;
     $("app").hidden = false;
-    if (inviteCode) joinCode(inviteCode);
+    const tableCode = (params.get("table") || "").toUpperCase();
+    if (tableCode && !window.LakouBoards.active()) {
+      const ok = await window.LakouBoards.joinTable(tableCode);
+      if (!ok) showView("games");
+    } else if (window.LakouBoards.active()) showView("table");
+    else if (inviteCode) joinCode(inviteCode);
     else showView(store.get("lakou:view") || "home");
   });
 
@@ -99,7 +131,9 @@
   });
 
   async function sayHello(name) {
-    const res = await emit("hello", { name });
+    let cached = null;
+    try { cached = JSON.parse(store.get("lakou:me") || "null"); } catch {}
+    const res = await emit("hello", { name, avatar: myAvatar, token: TOKEN, cached, today: localDate() });
     if (res.error) { $("welcome-error").textContent = res.error; return false; }
     myId = res.you;
     myName = res.name;
@@ -108,19 +142,28 @@
     $("welcome-error").textContent = "";
     $("me-name").textContent = myName;
     $("hello-name").textContent = myName;
+    if (res.me) setMe(res.me);
+    if (res.daily && res.daily.bonus) {
+      setTimeout(() => {
+        window.LakouFx.xpPop(res.daily.bonus, res.daily.streak > 1 ? `Bonis jou a · 🔥 ${res.daily.streak} jou youn dèyè lòt!` : "Bonis jou a 🎁");
+        window.LakouFx.sound("level");
+      }, 600);
+    }
     setOnline(res.online);
     setRooms(res.rooms);
     setLobby(res.lobby);
     setJokes(res.jokes);
+    setLeaderboard(res.leaderboard);
+    window.LakouBoards.onHello(res);
     return true;
   }
 
   // ---------- Navigasyon ant onglè prensipal yo ----------
-  const VIEWS = ["home", "movie", "games", "rire", "konekte", "room"];
+  const VIEWS = ["home", "movie", "games", "rire", "konekte", "room", "table"];
   let currentView = "home";
 
   function showView(v) {
-    if (!VIEWS.includes(v) || (v === "room" && !room)) v = "home";
+    if (!VIEWS.includes(v) || (v === "room" && !room) || (v === "table" && !window.LakouBoards.active())) v = "home";
     currentView = v;
     for (const name of VIEWS) $(`view-${name}`).hidden = name !== v;
     document.querySelectorAll(".navtab").forEach((b) => {
@@ -128,8 +171,9 @@
       b.classList.toggle("active", on);
       b.setAttribute("aria-selected", String(on));
     });
-    if (v !== "room") store.set("lakou:view", v);
-    if (v === "konekte") { const l = $("lobby-messages"); l.scrollTop = l.scrollHeight; }
+    if (v !== "room" && v !== "table") store.set("lakou:view", v);
+    if (v === "konekte") { const l = $("lobby-messages"); l.scrollTop = l.scrollHeight; unread = 0; $("unread-badge").hidden = true; }
+    if (v === "table") window.LakouBoards.clearTurnBadge();
     window.scrollTo({ top: 0 });
   }
   document.querySelectorAll(".navtab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
@@ -239,20 +283,33 @@
   }
 
   // ---------- 💬 Konekte ----------
+  let onlinePeople = [];
   function setOnline(list) {
     const people = list || [];
+    onlinePeople = people;
     $("online-badge").textContent = people.length;
     $("online-count").textContent = people.length;
     $("stat-online").textContent = `${people.length} moun an liy`;
     const ul = $("online-list");
-    ul.replaceChildren(...people.map((p) =>
-      el("li", { class: p.id === myId ? "me" : "" }, el("span", { class: "dot" }), p.name + (p.id === myId ? " (ou)" : ""))));
+    ul.replaceChildren(...people.map((p) => {
+      const isMe = p.id === myId;
+      return el("li", { class: isMe ? "me" : "" },
+        el("span", { class: "ol-av" }, p.avatar || "😎"),
+        el("span", { class: "ol-name" }, p.name + (isMe ? " (ou)" : ""), el("small", {}, `Nivo ${p.level || 1}${p.busy ? " · 🎮 ap jwe" : ""}`)),
+        isMe ? null : el("button", { class: "btn small", title: `Defi ${p.name}`, onclick: () => window.LakouBoards.openChallengePicker(p) }, "⚔️ Defi"));
+    }));
+    // Ti ban moun an liy sou paj akèy la
+    const others = people.filter((p) => p.id !== myId);
+    $("online-strip").replaceChildren(...(others.length ? others.slice(0, 24).map((p) =>
+      el("button", { class: "strip-person", title: `Defi ${p.name}`, onclick: () => window.LakouBoards.openChallengePicker(p) },
+        el("span", { class: "sp-av" }, p.avatar || "😎", p.busy ? el("i", { class: "busy" }, "🎮") : null),
+        el("small", {}, p.name))) : [el("p", { class: "fine" }, "Pa gen lòt moun an liy kounye a. Envite zanmi w, oswa jwe kont Robo Lakou 🤖!")]));
   }
   socket.on("online", setOnline);
 
   function lobbyLine(m) {
     return el("li", { class: m.fromId === myId ? "mine" : "" },
-      el("span", { class: "who" }, m.from), m.text,
+      el("span", { class: "who" }, `${m.avatar ? m.avatar + " " : ""}${m.from}`), m.text,
       el("time", { class: "at" }, new Date(m.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })));
   }
   function setLobby(list) {
@@ -261,7 +318,14 @@
     if (!list || !list.length) ol.append(el("li", { class: "system" }, "Pèsonn poko pale. Se ou ki pou kòmanse! 👋"));
     ol.scrollTop = ol.scrollHeight;
   }
+  let unread = 0;
   socket.on("lobby:chat", (m) => {
+    if (m.fromId !== myId && currentView !== "konekte") {
+      unread += 1;
+      $("unread-badge").textContent = unread > 9 ? "9+" : String(unread);
+      $("unread-badge").hidden = false;
+      window.LakouFx.sound("message");
+    }
     const ol = $("lobby-messages");
     ol.querySelectorAll("li.system").forEach((x) => x.remove());
     const nearBottom = ol.scrollHeight - ol.scrollTop - ol.clientHeight < 60;
@@ -318,7 +382,7 @@
         jokeSort === "top" && i < 3 && j.laughs > 0 ? el("span", { class: "medal" }, ["🥇", "🥈", "🥉"][i]) : null,
         el("p", { class: "joke-text" }, j.text),
         el("div", { class: "joke-foot" },
-          el("span", { class: "fine" }, `${j.by} · ${timeAgo(j.at)}`),
+          el("span", { class: "fine" }, `${j.avatar ? j.avatar + " " : ""}${j.by} · ${timeAgo(j.at)}`),
           el("div", { class: "joke-actions" },
             mine
               ? el("button", { class: "linkish", onclick: () => jokeAction("joke:delete", j.id, "Blag la efase.") }, "Efase")
@@ -764,6 +828,86 @@
       ));
     }
   }
+
+  // ---------- 👤 Pwofil: XP, nivo, seri jou ----------
+  let meStats = null;
+  function setMe(m) {
+    const before = meStats;
+    meStats = m;
+    // Sere pwogrè a sou aparèy la (si sèvè a rekòmanse, li ka reprann li)
+    store.set("lakou:me", JSON.stringify({ xp: m.xp, wins: m.wins, losses: m.losses, draws: m.draws, streak: m.streak, lastDaily: m.lastDaily }));
+    if (m.avatar) { myAvatar = m.avatar; }
+    $("me-avatar").textContent = myAvatar;
+    $("me-level").textContent = `N${m.level}`;
+    $("ph-avatar").textContent = myAvatar;
+    $("ph-level").textContent = `Nivo ${m.level}`;
+    $("ph-title").textContent = m.title;
+    $("ph-streak").textContent = `🔥 ${m.streak || 1} jou`;
+    $("ph-streak").hidden = !m.streak;
+    $("ph-record").textContent = `🏆 ${m.wins} viktwa · ${m.wins + m.losses + m.draws} pati`;
+    $("ph-xpfill").style.width = `${Math.round(Math.max(0, Math.min(1, m.progress)) * 100)}%`;
+    $("ph-xptext").textContent = `${m.xp - m.cur} / ${m.next - m.cur} XP pou nivo ${m.level + 1} · ${m.xp} XP an tout`;
+    return before;
+  }
+  socket.on("me", (m) => {
+    setMe(m);
+    if (m.gained) window.LakouFx.xpPop(m.gained, m.reason);
+    if (m.leveledUp) {
+      setTimeout(() => {
+        window.LakouFx.sound("level");
+        window.LakouFx.confetti(90);
+        toast(`🎉 Nivo ${m.level}! Ou se «${m.title}» kounye a.`);
+      }, 900);
+    }
+  });
+
+  // ---------- 🏆 Klasman ----------
+  function setLeaderboard(list) {
+    const ol = $("leaderboard");
+    const rows = list || [];
+    if (!rows.length) {
+      ol.replaceChildren(el("li", { class: "empty-row" }, "Poko gen pèsonn. Jwe yon pati pou w premye! 🥇"));
+      return;
+    }
+    ol.replaceChildren(...rows.map((p, i) => el("li", { class: p.name === myName && p.avatar === myAvatar ? "me" : "" },
+      el("span", { class: "rank" }, ["🥇", "🥈", "🥉"][i] || String(i + 1)),
+      el("span", { class: "lb-av" }, p.avatar || "😎"),
+      el("span", { class: "lb-name" }, p.name, el("small", {}, `Nivo ${p.level} · ${p.wins} viktwa`)),
+      el("b", { class: "lb-xp" }, `${p.xp} XP`))));
+  }
+  socket.on("leaderboard", setLeaderboard);
+
+  // ---------- Tit onglè a: atire atansyon (pa egzanp «Se tou pa w!») ----------
+  const baseTitle = document.title;
+  let flashTimer = null;
+  function flashTitle(text) {
+    if (!document.hidden) return;
+    clearInterval(flashTimer);
+    let on = false;
+    flashTimer = setInterval(() => { on = !on; document.title = on ? text : baseTitle; }, 1000);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) { clearInterval(flashTimer); document.title = baseTitle; }
+  });
+
+  // ---------- 🔊 Son ----------
+  function renderSoundBtn() {
+    $("sound-btn").textContent = window.LakouFx.muted ? "🔇" : "🔊";
+    $("sound-btn").setAttribute("aria-pressed", String(!window.LakouFx.muted));
+  }
+  $("sound-btn").addEventListener("click", () => {
+    window.LakouFx.setMuted(!window.LakouFx.muted);
+    renderSoundBtn();
+    window.LakouFx.sound("click");
+  });
+  renderSoundBtn();
+
+  // ---------- Bay boards.js zouti li bezwen ----------
+  window.LakouBoards.init({
+    socket, emit, el, toast, showView, flashTitle,
+    currentView: () => currentView,
+    me: () => ({ id: myId, name: myName, avatar: myAvatar, stats: meStats }),
+  });
 
   // ---------- Rekoneksyon ----------
   socket.on("connect", async () => {
